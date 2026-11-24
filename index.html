@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>彌勒救苦經・智慧闖關</title>
+<style>
+:root{--bg:#fff8e8;--paper:#fffdf6;--ink:#542b20;--gold:#bd8732;--red:#9b382c;--green:#39734e}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(145deg,#f7e6c5,#fffaf0);color:var(--ink);font-family:"Noto Serif TC","PMingLiU",serif}
+header{text-align:center;padding:25px 14px 18px;background:#762f24;color:#fff4d7;border-bottom:5px solid #d7ad5c}
+header h1{margin:0;font-size:clamp(25px,6vw,38px);letter-spacing:3px} header p{margin:8px 0 0;color:#f5dca9}
+main{max-width:760px;margin:20px auto;padding:0 14px 35px}.panel{background:var(--paper);border:1px solid #e5c98f;border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 5px 18px #6e3c2012}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs button,.action{border:0;border-radius:12px;padding:11px 15px;background:#ead8b6;color:#542b20;font-weight:bold;cursor:pointer}.tabs button.active,.action.primary{background:var(--red);color:white}
+h2{margin:0 0 14px;color:#873b2c}.verse{font-size:20px;line-height:2.05;text-align:center;white-space:pre-line;padding:10px 0}.muted{color:#8a7662;font-size:14px;text-align:center}
+button:focus{outline:3px solid #d7ad5c;outline-offset:2px}.action{margin:5px}
+#question{font-size:21px;line-height:1.7;margin:10px 0 18px}.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px}.answer{padding:14px;border:1px solid #dfc79c;border-radius:12px;background:#fff9eb;color:var(--ink);font-size:17px;cursor:pointer}.answer:hover{background:#f5e6c8}.answer.correct{background:#dcefe0;border-color:var(--green)}.answer.wrong{background:#f7dfdc;border-color:var(--red)}
+#feedback{min-height:28px;font-weight:bold;margin:12px 0}.bar{height:10px;background:#eee0c6;border-radius:20px;overflow:hidden}.bar span{display:block;height:100%;width:0;background:#b88632;transition:width .3s}.stats{display:flex;justify-content:space-between;font-size:14px;margin:8px 0 12px}
+select{padding:10px;border:1px solid #d9bf8e;border-radius:9px;background:#fffaf0;color:var(--ink)}
+@media(max-width:480px){.answers{grid-template-columns:1fr}.panel{padding:16px}.verse{font-size:18px}}
+</style>
+</head>
+<body>
+<header><h1>彌勒救苦經</h1><p>經文研讀・智慧闖關</p></header>
+<main>
+<div class="panel">
+ <div class="tabs">
+  <button class="active" data-tab="study">經文誦讀</button>
+  <button data-tab="quiz">智慧問答</button>
+  <button data-tab="memory">經句填空</button>
+ </div>
+</div>
+<section id="study" class="panel">
+ <h2>經文誦讀</h2>
+ <p class="muted">選擇段落，逐段閱讀與持念。</p>
+ <div style="text-align:center;margin:12px 0"><select id="passage"></select></div>
+ <div class="verse" id="verse"></div>
+ <div style="display:flex;justify-content:center;flex-wrap:wrap">
+  <button class="action" id="prev">上一段</button><button class="action primary" id="next">下一段</button>
+ </div>
+</section>
+<section id="quiz" class="panel" hidden>
+ <h2>智慧問答</h2>
+ <div class="stats"><span id="qcount">第 1 題</span><span id="score">得分：0</span></div>
+ <div class="bar"><span id="progress"></span></div>
+ <div id="question"></div><div class="answers" id="answers"></div>
+ <div id="feedback" aria-live="polite"></div>
+ <button class="action primary" id="nextq" hidden>下一題</button>
+ <button class="action" id="restart">重新開始</button>
+</section>
+<section id="memory" class="panel" hidden>
+ <h2>經句填空</h2><p class="muted">從選項中選出經文缺少的字句。</p>
+ <div id="blankquestion" style="font-size:21px;line-height:1.8;margin:18px 0"></div>
+ <div class="answers" id="blankanswers"></div><div id="blankfeedback" aria-live="polite" style="margin:12px 0;font-weight:bold"></div>
+ <button class="action primary" id="blanknext">再來一題</button>
+</section>
+<div class="panel muted">本遊戲依照你提供的經文製作，作為閱讀與記憶練習；不代表對經文教義或歷史解釋的判定。</div>
+</main>
+<script>
+const passages = [
+`佛說彌勒救苦經。\n彌勒下世不非輕。\n領寶齊魯靈山地。\n拈花印證考三乘。`,
+`落在中原三星地。\n大證四川王桃心。\n天眞收圓掛聖號。\n等待時至點神兵。`,
+`雲雷震開戊己土。\n天下神鬼不安寧。\n親在仁天中華母。\n九蓮聖教歸上乘。`,
+`天花老母垂玉線。\n收圓顯化在古東。\n南北兩極連宗緒。\n混元古冊在中央。`,
+`老母降下通天竅。\n無影山前對合同。\n嬰兒要想歸家去。\n持念當來彌勒經。`,
+`用心持念佛來救。\n朵朵金蓮去超生。\n識得西來白陽子。\n鄉兒點鐵化成金。`,
+`每日志心常持念。\n三災八難不來侵。\n要想成佛勤禮拜。\n常持聰明智慧心。`,
+`休聽邪人胡說話。\n牢栓意馬念無生。\n老母降下眞天咒。\n用心持念有神通。`,
+`滿天星斗都下世。\n五方列仙下天宮。\n各方城隍來對號。\n報事靈童察的清。`,
+`三官慈悲大帝主。\n赦罪三曹救眾生。\n救苦天尊來救世。\n親點文部揭地神。`,
+`八大金剛來護法。\n四位菩薩救眾生。\n緊領三十六員將。\n五百靈官緊隨跟。`,
+`扶助彌勒成大道。\n保佑鄉兒得安寧。\n北方眞武為將帥。\n青臉紅髮顯神通。`,
+`扯起皂旗遮日月。\n頭頂森羅七寶星。\n威震北方為帥首。\n速請諸惡掛甲兵。`,
+`搭救原人鄉兒女。\n火光落地化為塵。\n四海龍王來助道。\n各駕祥雲去騰空。`,
+`十方天兵護佛駕。\n保佑彌勒去成功。\n紅陽了道歸家去。\n轉到三陽彌勒尊。`,
+`無皇敕令記下生。\n收伏南閻歸正宗。\n來往造下眞言咒。\n傳下當來大藏經。`,
+`嬰兒姹女常持念。\n邪神不敢來近身。\n持念一遍神通大。\n持念兩遍得超生。`,
+`持念三遍神鬼怕。\n魍魎邪魔化為塵。\n修持劫內尋路徑。\n念起真言歸佛令。`,
+`南無天元太保。\n阿彌陀佛。`
+];
+const passage=document.getElementById('passage'), verse=document.getElementById('verse');let pi=0;
+passages.forEach((_,i)=>{let o=document.createElement('option');o.value=i;o.textContent=`第 ${i+1} 段`;passage.append(o)});
+function showPassage(){passage.value=pi;verse.textContent=passages[pi]}
+passage.onchange=()=>{pi=+passage.value;showPassage()};
+document.getElementById('prev').onclick=()=>{pi=(pi+passages.length-1)%passages.length;showPassage()};
+document.getElementById('next').onclick=()=>{pi=(pi+1)%passages.length;showPassage()};showPassage();
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('active',x===b));['study','quiz','memory'].forEach(id=>document.getElementById(id).hidden=id!==b.dataset.tab)});
+const questions=[
+['經文開頭是哪一句？',['佛說彌勒救苦經。','阿彌陀佛。','每日志心常持念。','十方天兵護佛駕。'],0],
+['「拈花印證考」後面接哪三字？',['三災八難','三乘','三十六','三官'],1],
+['經文說「嬰兒要想歸家去」，應持念什麼？',['當來彌勒經','真天咒','大藏經','白陽子'],0],
+['「朵朵金蓮」後面接什麼？',['去騰空','去超生','歸正宗','來助道'],1],
+['經文中說北方真武為什麼？',['護法','大帝主','將帥','靈童'],2],
+['「八大金剛來護法」下一句是？',['四位菩薩救眾生。','五方列仙下天宮。','四海龍王來助道。','三官慈悲大帝主。'],0],
+['最後的兩句是？',['南無天元太保。阿彌陀佛。','持念真言歸佛令。阿彌陀佛。','彌勒下世不非輕。阿彌陀佛。','每日志心常持念。阿彌陀佛。'],0]
+];
+let qi=0,points=0,answered=false;
+function renderQ(){answered=false;let q=questions[qi];document.getElementById('qcount').textContent=`第 ${qi+1} / ${questions.length} 題`;document.getElementById('score').textContent=`得分：${points}`;document.getElementById('progress').style.width=`${qi/questions.length*100}%`;document.getElementById('question').textContent=q[0];document.getElementById('feedback').textContent='';document.getElementById('nextq').hidden=true;let box=document.getElementById('answers');box.innerHTML='';q[1].forEach((a,i)=>{let b=document.createElement('button');b.className='answer';b.textContent=a;b.onclick=()=>{if(answered)return;answered=true;if(i===q[2]){points++;b.classList.add('correct');document.getElementById('feedback').textContent='答對了！';}else{b.classList.add('wrong');box.children[q[2]].classList.add('correct');document.getElementById('feedback').textContent='再記一記這句經文。'}document.getElementById('score').textContent=`得分：${points}`;document.getElementById('nextq').hidden=false;document.getElementById('nextq').textContent=qi===questions.length-1?'查看成績':'下一題'};box.append(b)})}
+document.getElementById('nextq').onclick=()=>{if(qi===questions.length-1){document.getElementById('question').textContent=`完成闖關！你的得分是 ${points} / ${questions.length}。`;document.getElementById('answers').innerHTML='';document.getElementById('feedback').textContent='可以重新開始，再挑戰一次。';document.getElementById('nextq').hidden=true;document.getElementById('progress').style.width='100%'}else{qi++;renderQ()}};
+document.getElementById('restart').onclick=()=>{qi=0;points=0;renderQ()};renderQ();
+const blanks=[
+['佛說彌勒救苦經。彌勒下世不非輕。領寶齊魯靈山地。＿＿＿＿。','拈花印證考三乘。',['拈花印證考三乘。','每日志心常持念。','四海龍王來助道。'],0],
+['嬰兒要想歸家去。＿＿＿＿。','持念當來彌勒經。',['持念當來彌勒經。','保佑鄉兒得安寧。','五方列仙下天宮。'],0],
+['每日志心常持念。＿＿＿＿。','三災八難不來侵。',['三災八難不來侵。','朵朵金蓮去超生。','五百靈官緊隨跟。'],0],
+['八大金剛來護法。＿＿＿＿。','四位菩薩救眾生。',['四位菩薩救眾生。','青臉紅髮顯神通。','南無天元太保。'],0],
+['持念一遍神通大。＿＿＿＿。','持念兩遍得超生。',['持念兩遍得超生。','魍魎邪魔化為塵。','轉到三陽彌勒尊。'],0]
+];let bi=0;
+function renderBlank(){let x=blanks[bi];let box=document.getElementById('blankanswers');box.dataset.done='';document.getElementById('blankquestion').textContent=x[0];document.getElementById('blankfeedback').textContent='';box.innerHTML='';x[2].forEach((a,i)=>{let b=document.createElement('button');b.className='answer';b.textContent=a;b.onclick=()=>{if(box.dataset.done)return;box.dataset.done='1';if(i===x[3]){b.classList.add('correct');document.getElementById('blankfeedback').textContent='答對了！'}else{b.classList.add('wrong');box.children[x[3]].classList.add('correct');document.getElementById('blankfeedback').textContent='答錯了！正確經句：'+x[1]}document.getElementById('blanknext').textContent='下一題';setTimeout(()=>{bi=(bi+1)%blanks.length;renderBlank()},700)};box.append(b)})}
+document.getElementById('blanknext').onclick=()=>{bi=(bi+1)%blanks.length;renderBlank()};renderBlank();
+</script>
+</body></html>
